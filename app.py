@@ -1,35 +1,32 @@
 from flask import Flask, request, jsonify
-import pyodbc
+import mysql.connector
 import os
 
 app = Flask(__name__)
 
-# Configuración de conexión (ajusta con tus datos de Azure SQL)
-DB_SERVER = "tuservidor.database.windows.net"   # Cambia por tu servidor SQL
-DB_NAME = "sensoresDB"                          # Cambia por tu base de datos
-DB_USER = "adminsql"                            # Usuario SQL
-DB_PASSWORD = "TuContraseñaSegura"              # Contraseña SQL
-
-# Cadena de conexión
-conn_str = (
-    "Driver={ODBC Driver 17 for SQL Server};"
-    f"Server={DB_SERVER};"
-    f"Database={DB_NAME};"
-    f"Uid={DB_USER};"
-    f"Pwd={DB_PASSWORD};"
-    "Encrypt=yes;"
-)
+# Datos de conexión MySQL en Azure
+DB_HOST = "esp-server.mysql.database.azure.com"
+DB_NAME = "esp-database"
+DB_USER = "qfccvopgga"
+DB_PASSWORD = "$tJThXDxihRMiNXg"
 
 @app.route('/movimiento', methods=['POST'])
 def movimiento():
     try:
         data = request.get_json()
-        estado = data.get("estado")  # 1 = movimiento, 0 = sin movimiento
+        estado = data.get("estado")
 
-        conn = pyodbc.connect(conn_str)
+        conn = mysql.connector.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            ssl_disabled=False
+        )
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO movimientos (estado) VALUES (?)", estado)
+        cursor.execute("INSERT INTO movimientos (estado) VALUES (%s)", (estado,))
         conn.commit()
+        cursor.close()
         conn.close()
 
         return jsonify({"status": "ok", "message": "Dato guardado"}), 200
@@ -42,3 +39,4 @@ def home():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
+
